@@ -74,14 +74,14 @@
 <body>
     <div class="container">
         <header><h1>📚 AI 용어 사전</h1></header>
-        <div class="local-info">📱 스마트폰에 저장 후 브라우저에서 이 파일을 열고, MD 파일을 선택하세요. (인터넷 없이 동작)</div>
+        <div class="local-info">📱 페이지를 열면 AI_Words.md를 자동으로 불러옵니다. 파일 선택은 대체 로딩용입니다.</div>
         <div class="upload-area" id="uploadArea">
             <input type="file" id="fileInput" accept=".md" />
             <p>MD 파일 선택</p>
             <p style="font-size: 0.85rem; margin-top: 8px; color: var(--text-secondary);">UTF-8 인코딩 권장</p>
         </div>
         <div id="contentArea">
-            <div class="empty-state" id="emptyState"><p>MD 파일을 선택하면 용어가 표시됩니다.</p></div>
+            <div class="empty-state" id="emptyState"><p>AI_Words.md를 불러오는 중입니다...</p></div>
             <div id="termDisplay" style="display: none;">
                 <div class="term-card">
                     <h2 id="termTitle"></h2>
@@ -195,6 +195,22 @@
             } catch (e) {}
         }
 
+        async function loadDefaultMD() {
+            try {
+                const response = await fetch('AI_Words.md', { cache: 'no-cache' });
+                if (!response.ok) throw new Error('default md fetch failed');
+                const content = await response.text();
+                terms = parseTermsFromMD(content);
+                if (terms.length > 0) {
+                    localStorage.setItem(STORAGE_KEY, content);
+                    initDeck();
+                    showTerm();
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        }
+
         function processFile(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -222,7 +238,14 @@
             e.target.value = '';
         });
         document.getElementById('nextBtn').addEventListener('click', () => { currentIndex++; showTerm(); });
-        loadFromStorage();
+        loadDefaultMD().then(success => {
+            if (!success) {
+                loadFromStorage();
+                if (!terms.length) {
+                    document.getElementById('emptyState').innerHTML = '<p>자동 로드 실패. 아래에서 MD 파일을 선택해 주세요.</p>';
+                }
+            }
+        });
     </script>
 </body>
 </html>
