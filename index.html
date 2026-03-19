@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>AI 용어 사전</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --accent: #e94560;
+            --text-primary: #eaeaea;
+            --text-secondary: #a0a0a0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 16px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 24px; }
+        h1 { font-size: 1.5rem; color: var(--accent); }
+        .local-info {
+            background: rgba(233, 69, 96, 0.15);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .upload-area {
+            border: 2px dashed var(--text-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-area:hover, .upload-area.dragover { border-color: var(--accent); background: rgba(233, 69, 96, 0.1); }
+        .upload-area input { display: none; }
+        .term-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .term-card h2 { color: var(--accent); font-size: 1.25rem; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid rgba(233, 69, 96, 0.3); }
+        .term-card .description { font-size: 0.95rem; line-height: 1.7; }
+        .term-card .description p { margin-bottom: 12px; }
+        .term-card .description table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.9rem; }
+        .term-card .description th, .term-card .description td { border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; text-align: left; }
+        .term-card .description th { background: rgba(233, 69, 96, 0.2); }
+        .term-card .description code { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
+        .term-card .description pre { overflow-x: auto; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.85rem; white-space: pre-wrap; }
+        .nav-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
+        button { flex: 1; max-width: 200px; padding: 14px 24px; font-size: 1rem; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; }
+        button:active { transform: scale(0.98); }
+        .btn-next { background: var(--accent); color: white; }
+        .btn-upload { background: var(--bg-secondary); color: var(--accent); border: 2px solid var(--accent); }
+        .progress { text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-top: 12px; }
+        .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header><h1>📚 AI 용어 사전</h1></header>
+        <div class="local-info">📱 스마트폰에 저장 후 브라우저에서 이 파일을 열고, MD 파일을 선택하세요. (인터넷 없이 동작)</div>
+        <div class="upload-area" id="uploadArea">
+            <input type="file" id="fileInput" accept=".md" />
+            <p>MD 파일 선택</p>
+            <p style="font-size: 0.85rem; margin-top: 8px; color: var(--text-secondary);">UTF-8 인코딩 권장</p>
+        </div>
+        <div id="contentArea">
+            <div class="empty-state" id="emptyState"><p>MD 파일을 선택하면 용어가 표시됩니다.</p></div>
+            <div id="termDisplay" style="display: none;">
+                <div class="term-card">
+                    <h2 id="termTitle"></h2>
+                    <div class="description" id="termDescription"></div>
+                </div>
+                <div class="progress" id="progress"></div>
+                <div class="nav-buttons">
+                    <button class="btn-next" id="nextBtn">다음 용어</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const STORAGE_KEY = 'ai_words_md_content';
+        let terms = [], currentDeck = [], currentIndex = 0;
+
+        function simpleMarkdown(str) {
+            if (!str) return '';
+            let html = str
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>');
+            return html.replace(/\n/g, '<br>');
+        }
+
+        function mdToHtml(text) {
+            if (!text) return '';
+            const lines = text.split('\n');
+            let html = '', inCode = false, codeLang = '', tableRows = [];
+            const flushTable = () => {
+                if (tableRows.length) {
+                    html += '<table><thead><tr>' + tableRows[0].split(/\t/).map(c => '<th>' + simpleMarkdown(c) + '</th>').join('') + '</tr></thead><tbody>';
+                    for (let i = 1; i < tableRows.length; i++)
+                        html += '<tr>' + tableRows[i].split(/\t/).map(c => '<td>' + simpleMarkdown(c) + '</td>').join('') + '</tr>';
+                    html += '</tbody></table>';
+                    tableRows = [];
+                }
+            };
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i], t = line.trim();
+                if (t.startsWith('```')) {
+                    flushTable();
+                    if (!inCode) { inCode = true; codeLang = t.slice(3); html += '<pre><code>'; }
+                    else { inCode = false; html += '</code></pre>'; }
+                    continue;
+                }
+                if (inCode) { html += line.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '\n'; continue; }
+                const isTableRow = t.match(/^\|.+\|$/) || (t.split('\t').length >= 2 && t.includes('\t'));
+                if (isTableRow) {
+                    const cells = t.replace(/\|/g, '\t').split(/\t/).map(c => c.trim()).filter(Boolean);
+                    if (cells.length >= 2) { tableRows.push(cells.join('\t')); continue; }
+                }
+                flushTable();
+                if (t.startsWith('### ')) html += '<h3>' + simpleMarkdown(t.slice(4)) + '</h3>';
+                else if (t.startsWith('- ') || t.startsWith('•\t') || t.startsWith('• ')) html += '<p>• ' + simpleMarkdown(t.replace(/^[•\-]\s*/, '')) + '</p>';
+                else if (t.match(/^\d+\.\s/)) html += '<p>' + simpleMarkdown(t) + '</p>';
+                else if (t) html += '<p>' + simpleMarkdown(t) + '</p>';
+            }
+            flushTable();
+            return html;
+        }
+
+        function parseTermsFromMD(content) {
+            content = content.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const result = [], lines = content.split('\n');
+            let inCodeBlock = false, currentTerm = null, currentDescription = [];
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i], trimmed = line.trim();
+                if (trimmed.startsWith('```')) { inCodeBlock = !inCodeBlock; if (currentTerm) currentDescription.push(line); continue; }
+                if (inCodeBlock) { if (currentTerm) currentDescription.push(line); continue; }
+                const h2Match = trimmed.match(/^##\s+(.+)$/);
+                if (h2Match) {
+                    if (currentTerm) result.push({ term: currentTerm, description: currentDescription.join('\n').trim() });
+                    currentTerm = h2Match[1].trim();
+                    currentDescription = [];
+                } else if (currentTerm) currentDescription.push(line);
+            }
+            if (currentTerm) result.push({ term: currentTerm, description: currentDescription.join('\n').trim() });
+            return result;
+        }
+
+        function shuffleArray(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function initDeck() { currentDeck = shuffleArray(terms.map((_, i) => i)); currentIndex = 0; }
+
+        function showTerm() {
+            if (!terms.length) return;
+            if (currentIndex >= currentDeck.length) initDeck();
+            const item = terms[currentDeck[currentIndex]];
+            document.getElementById('termTitle').textContent = item.term;
+            document.getElementById('termDescription').innerHTML = mdToHtml(item.description || '');
+            document.getElementById('progress').textContent = `${currentIndex + 1} / ${currentDeck.length} (전체 ${terms.length}개)`;
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('termDisplay').style.display = 'block';
+        }
+
+        function loadFromStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    terms = parseTermsFromMD(saved);
+                    if (terms.length > 0) { initDeck(); showTerm(); }
+                }
+            } catch (e) {}
+        }
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                terms = parseTermsFromMD(content);
+                localStorage.setItem(STORAGE_KEY, content);
+                if (terms.length > 0) { initDeck(); showTerm(); }
+                else alert('용어를 찾을 수 없습니다. MD 파일 형식을 확인해 주세요. (## 용어명 형식)');
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        document.getElementById('uploadArea').addEventListener('click', () => document.getElementById('fileInput').click());
+        document.getElementById('uploadArea').addEventListener('dragover', e => { e.preventDefault(); document.getElementById('uploadArea').classList.add('dragover'); });
+        document.getElementById('uploadArea').addEventListener('dragleave', () => document.getElementById('uploadArea').classList.remove('dragover'));
+        document.getElementById('uploadArea').addEventListener('drop', e => {
+            e.preventDefault();
+            document.getElementById('uploadArea').classList.remove('dragover');
+            const f = e.dataTransfer.files[0];
+            if (f && (f.name.endsWith('.md') || f.type === 'text/markdown')) processFile(f);
+        });
+        document.getElementById('fileInput').addEventListener('change', e => {
+            const f = e.target.files[0];
+            if (f) processFile(f);
+            e.target.value = '';
+        });
+        document.getElementById('nextBtn').addEventListener('click', () => { currentIndex++; showTerm(); });
+        loadFromStorage();
+    </script>
+</body>
+</html>
