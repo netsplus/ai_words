@@ -240,7 +240,9 @@
         document.getElementById('nextBtn').addEventListener('click', () => {
             currentIndex++;
             showTerm();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
         });
         loadDefaultMD().then(success => {
             if (!success) {
