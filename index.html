@@ -237,7 +237,11 @@
             if (f) processFile(f);
             e.target.value = '';
         });
-        document.getElementById('nextBtn').addEventListener('click', () => { currentIndex++; showTerm(); });
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            currentIndex++;
+            showTerm();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
         loadDefaultMD().then(success => {
             if (!success) {
                 loadFromStorage();
