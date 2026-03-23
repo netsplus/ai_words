@@ -36,17 +36,6 @@
             font-size: 0.85rem;
             color: var(--text-secondary);
         }
-        .upload-area {
-            border: 2px dashed var(--text-secondary);
-            border-radius: 12px;
-            padding: 24px;
-            text-align: center;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .upload-area:hover, .upload-area.dragover { border-color: var(--accent); background: rgba(233, 69, 96, 0.1); }
-        .upload-area input { display: none; }
         .term-card {
             background: var(--bg-secondary);
             border-radius: 16px;
@@ -66,7 +55,6 @@
         button { flex: 1; max-width: 200px; padding: 14px 24px; font-size: 1rem; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; }
         button:active { transform: scale(0.98); }
         .btn-next { background: var(--accent); color: white; }
-        .btn-upload { background: var(--bg-secondary); color: var(--accent); border: 2px solid var(--accent); }
         .progress { text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-top: 12px; }
         .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
         .search-wrap { position: relative; margin-bottom: 20px; }
@@ -136,12 +124,6 @@
             <div class="search-results" id="searchResults" role="listbox" aria-label="검색 결과"></div>
         </div>
         <p class="search-meta" id="searchMeta" hidden></p>
-        <div class="local-info">📱 페이지를 열면 AI_Words.md를 자동으로 불러옵니다. 파일 선택은 대체 로딩용입니다.</div>
-        <div class="upload-area" id="uploadArea">
-            <input type="file" id="fileInput" accept=".md" />
-            <p>MD 파일 선택</p>
-            <p style="font-size: 0.85rem; margin-top: 8px; color: var(--text-secondary);">UTF-8 인코딩 권장</p>
-        </div>
         <div id="contentArea">
             <div class="empty-state" id="emptyState"><p>AI_Words.md를 불러오는 중입니다...</p></div>
             <div id="termDisplay" style="display: none;">
@@ -372,33 +354,12 @@
             return false;
         }
 
-        function processFile(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const content = e.target.result;
-                terms = parseTermsFromMD(content);
-                localStorage.setItem(STORAGE_KEY, content);
-                if (terms.length > 0) { initDeck(); showTerm(); }
-                else alert('용어를 찾을 수 없습니다. MD 파일 형식을 확인해 주세요. (## 용어명 형식)');
-            };
-            reader.readAsText(file, 'UTF-8');
-        }
-
-        document.getElementById('uploadArea').addEventListener('click', () => document.getElementById('fileInput').click());
-        document.getElementById('uploadArea').addEventListener('dragover', e => { e.preventDefault(); document.getElementById('uploadArea').classList.add('dragover'); });
-        document.getElementById('uploadArea').addEventListener('dragleave', () => document.getElementById('uploadArea').classList.remove('dragover'));
-        document.getElementById('uploadArea').addEventListener('drop', e => {
-            e.preventDefault();
-            document.getElementById('uploadArea').classList.remove('dragover');
-            const f = e.dataTransfer.files[0];
-            if (f && (f.name.endsWith('.md') || f.type === 'text/markdown')) processFile(f);
-        });
-        document.getElementById('fileInput').addEventListener('change', e => {
-            const f = e.target.files[0];
-            if (f) processFile(f);
-            e.target.value = '';
-        });
         document.getElementById('nextBtn').addEventListener('click', () => {
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            searchInput.value = '';
+            searchResults.innerHTML = '';
+            closeSearchResults();
             currentIndex++;
             showTerm();
             window.scrollTo(0, 0);
@@ -409,7 +370,7 @@
             if (!success) {
                 loadFromStorage();
                 if (!terms.length) {
-                    document.getElementById('emptyState').innerHTML = '<p>자동 로드 실패. 아래에서 MD 파일을 선택해 주세요.</p>';
+                    document.getElementById('emptyState').innerHTML = '<p>자동 로드 실패. AI_Words.md 파일 경로와 내용을 확인해 주세요.</p>';
                 }
             }
         });
