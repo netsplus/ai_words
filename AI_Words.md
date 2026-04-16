@@ -6493,8 +6493,8 @@ pipeline()은 보통 Hugging Face Transformers에서 쓰는 고수준 API를 말
 
 즉, 복잡한 모델 코드를 직접 안 짜고도 바로 AI 기능을 붙일 수 있어요.
 
-1. 가장 대표적으로 할 수 있는 것들
-1) 감정 분석
+**1. 가장 대표적으로 할 수 있는 것들**
+**1) 감정 분석**
 문장이 긍정인지 부정인지 판단
 
 ```python
@@ -6510,7 +6510,7 @@ print(classifier("I love this movie"))
 [{'label': 'POSITIVE', 'score': 0.999}]
 ```
 
-2) 텍스트 생성
+**2) 텍스트 생성**
 문장을 이어서 생성
 
 ```python
@@ -6520,21 +6520,21 @@ print(generator("Once upon a time", max_new_tokens=30))
 
 이런 식으로 스토리 초안, 문장 자동완성 등을 만들 수 있어요.
 
-3) 요약
+**3) 요약**
 긴 글을 짧게 줄이기
 ```python
 summarizer = pipeline("summarization")
 print(summarizer(long_text, max_length=80, min_length=30))
 ```
 
-4) 번역
+**4) 번역**
 영어→한국어, 한국어→영어 등
 ```python
 translator = pipeline("translation", model="Helsinki-NLP/opus-mt-en-ko")
 print(translator("Machine learning is amazing"))
 ```
 
-5) 질문 답변
+**5) 질문 답변**
 주어진 문서 안에서 답 찾기
 ```python
 qa = pipeline("question-answering")
@@ -6551,7 +6551,7 @@ qa(
 
 즉, 문서 기반 QA 봇 만들 때 쓸 수 있어요.
 
-6) 문서에서 정보 추출
+**6) 문서에서 정보 추출**
 예: 개체명 인식(NER)
 ```python
 ner = pipeline("ner", grouped_entities=True)
@@ -6565,7 +6565,7 @@ print(ner("Elon Musk founded SpaceX in the United States."))
 장소
 날짜 등
 
-7) 마스킹된 단어 채우기
+**7) 마스킹된 단어 채우기**
 빈칸 예측
 ```python
 fill_mask = pipeline("fill-mask")
@@ -6573,7 +6573,7 @@ print(fill_mask("Paris is the <mask> of France."))
 ```
 언어모델 테스트, 자동완성 실험에 자주 써요.
 
-8) 제로샷 분류
+**8) 제로샷 분류**
 학습 안 시킨 라벨로도 분류
 ```python
 classifier = pipeline("zero-shot-classification")
@@ -6588,7 +6588,7 @@ classifier(
 메일 태깅
 문서 라우팅
 
-9) 이미지 관련 작업도 가능
+**9) 이미지 관련 작업도 가능**
 텍스트만 되는 게 아니에요.
 
 예:
@@ -6607,7 +6607,7 @@ image_classifier = pipeline("image-classification")
 image_classifier("cat.jpg")
 ```
 
-10) 음성 작업도 가능
+**10) 음성 작업도 가능**
 예:
 
 음성 → 텍스트(ASR)
@@ -6619,7 +6619,7 @@ asr = pipeline("automatic-speech-recognition")
 asr("audio.wav")
 ```
 
-2. 왜 pipeline()을 쓰는가?
+**2. 왜 pipeline()을 쓰는가?**
 직접 모델을 쓰려면 보통 이런 과정이 필요해요:
 
 토크나이저 로드
@@ -6653,7 +6653,7 @@ classifier("I love this movie")
 ```
 끝이에요.
 
-3. 구체적으로 실무에서 뭘 만들 수 있냐?
+**3. 구체적으로 실무에서 뭘 만들 수 있냐?**
 **업무 자동화**
 이메일 감정 분석
 고객 문의 분류
@@ -6677,7 +6677,7 @@ FAQ 자동 응답
 음성 받아서 텍스트 변환
 이미지 분류 서비스
 
-4. pipeline()의 기본 사용 형태
+**4. pipeline()의 기본 사용 형태**
 가장 기본형은 이거예요:
 ```python
 from transformers import pipeline
@@ -6692,7 +6692,7 @@ pipe = pipeline("sentiment-analysis")
 pipe("This product is great")
 ```
 
-5. 모델을 직접 지정할 수도 있음
+**5. 모델을 직접 지정할 수도 있음**
 기본 모델 말고 원하는 모델로 바꿀 수 있어요.
 ```python
 pipe = pipeline(
@@ -6707,7 +6707,7 @@ pipe = pipeline(
 더 정확한 모델 선택 가능
 한국어 특화 모델 사용 가능
 
-6. 한국어에도 쓸 수 있나?
+**6. 한국어에도 쓸 수 있나?**
 네, 가능해요.
 다만 기본값이 영어 모델인 경우가 많아서, 한국어 성능을 원하면 한국어용 모델을 직접 지정하는 게 좋아요.
 
@@ -6721,14 +6721,14 @@ pipe = pipeline(
 
 혹은 한국어 요약/번역/감정분석용 모델을 허깅페이스 허브에서 찾아 연결할 수 있어요.
 
-7. pipeline()의 장점
+**7. pipeline()의 장점**
 매우 쉬움
 빠르게 프로토타입 가능
 전처리/후처리 자동
 다양한 태스크 지원
 텍스트/이미지/오디오까지 커버
 
-8. 단점도 있음
+**8. 단점도 있음**
 1) 세밀한 제어가 어려움
 세부 토크나이징, 배치 처리, 로짓 직접 활용 등은 직접 모델 다루는 게 더 좋아요.
 
@@ -6743,7 +6743,7 @@ ONNX / TensorRT
 3) 모델 선택을 잘해야 함
 그냥 기본 pipeline()만 쓰면 영어 중심/기본 모델이 잡힐 수 있어요.
 
-9. 한 문장으로 정리하면
+**9. 한 문장으로 정리하면**
 pipeline()은
 
 "AI 모델을 복잡한 내부 구현 없이 바로 기능 단위로 쓰게 해주는 편리한 래퍼"
@@ -6763,7 +6763,7 @@ pipeline()은
 
 네. 가능하지만, transformers.pipeline()에 API 주소와 API Key를 직접 넣는 방식은 보통 아닙니다.
 
-핵심만 먼저 말하면:
+**핵심만 먼저 말하면:**
 
 로컬 파일 기반 모델 → pipeline()로 직접 연결 가능
 원격 온프레미스 Endpoint(API 서버) → 보통 pipeline()이 아니라 HTTP 요청 / 전용 SDK로 연결
@@ -6805,7 +6805,7 @@ print(response.json())
 ```
 
 즉, 가능한지에 대한 정확한 답
-1) pipeline(model="엔드포인트주소") 식으로 바로?
+**1) pipeline(model="엔드포인트주소") 식으로 바로?**
 대체로 안 됩니다.
 
 예를 들어 이런 식은 보통 안 맞아요:
@@ -6815,7 +6815,7 @@ pipeline("text-generation", model="https://my-endpoint/api", api_key="...")
 
 pipeline()은 이런 인터페이스를 기본 제공하지 않아요.
 
-2) 그럼 온프레미스 API 모델은 못 쓰냐?
+**2) 그럼 온프레미스 API 모델은 못 쓰냐?**
 아니요. 충분히 쓸 수 있어요.
 다만 방식이 바뀝니다.
 
@@ -6934,7 +6934,7 @@ print(llm("한국어 이메일 초안 작성해줘"))
 
 이렇게 하면 사용감은 pipeline()처럼 만들 수 있어요.
 
-LangChain 같은 프레임워크에 연결도 가능
+**LangChain 같은 프레임워크에 연결도 가능**
 온프레미스 API라면 오히려 pipeline()보다 이런 쪽이 더 실무적이에요.
 
 LangChain custom LLM
@@ -6956,7 +6956,7 @@ Endpoint API
 “이미 다른 서버에 떠 있는 모델에게 요청만 보냄”
 즉, 아키텍처 자체가 달라요.
 
-실무에서 추천하는 방향
+**실무에서 추천하는 방향**
 엔드포인트가 OpenAI 호환이면
 → OpenAI SDK 방식 추천
 
@@ -6969,7 +6969,7 @@ Hugging Face 스타일 코드와 비슷한 UX가 필요하면
 RAG/체인/에이전트 붙일 거면
 → LangChain/LlamaIndex connector 형태 추천
 
-보안 측면 팁
+**보안 측면 팁**
 API Key는 코드에 직접 박지 말고 환경변수로 두는 게 좋아요.
 ```python
 import os
