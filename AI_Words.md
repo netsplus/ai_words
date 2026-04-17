@@ -7114,46 +7114,30 @@ Prompt chaining 방식
 각 카테고리별 개선 아이디어 생성
 보통 후자가 더 일관되고 관리하기 쉬운 결과를 줍니다.
 
+**piplines의 사용 용도**
+- 텍스트 뿐만 아니라 이미지, 오디오 또는 멀티 모달 작업으로도 사용 가능
 
-## pipeline
-"초간단 AI 실행 도우미" 같은 역할.
-✅ 한 줄 정의
-pipeline은
-복잡한 AI 모델을 "한 줄"로 쓸 수 있게 만들어주는 도구.
-즉, 모델 불러오기, 토크나이징, 추론, 디코딩 등을 자동으로 처리해 줌.
-🧠 쉽게 비유하면
-AI 모델을 사용하는 데 필요한 복잡한 과정들:
-텍스트 입력 → 토크나이저로 변환 → 모델 통과 → 출력 해석 → 결과 반환
-이걸 전부 자동으로 해주는 “AI 요리사 비서” 같은 존재.
-🔧 예시로 설명
-from transformers import pipeline
+**Text pipelines**
+text-generation: 프롬프트를 바탕으로 텍스트 생성
+text-classification: 텍스트를 미리 정의된 범주로 분류
+summarization: 핵심 정보를 유지하면서 텍스트를 더 짧게 요약
+translation: 텍스트를 한 언어에서 다른 언어로 번역
+zero-shot-classification: 특정 라벨에 대해 사전 학습하지 않고도 텍스트 분류. 예) “이 문장이 어떤 카테고리에 속해?”, “이 글이 어떤 종류인지, 내가 지금 준 후보들 중에서 가장 가까운 걸 골라봐.”, "이 문장은 refund, billing, technical support 중 어디에 가까워?"
+feature-extraction: 텍스트의 벡터 표현(특징값) 추출. 문장을 사람이 읽는 글자가 아니라, 모델이 이해할 수 있는 숫자 벡터로 바꾸는 것
 
-generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
-output = generator("오늘 날씨는", max_new_tokens=30)
-print(output[0]['generated_text'])
-위 코드 한 줄로:
-•	문장을 토크나이즈하고
-•	모델이 예측한 토큰을 생성하고
-•	텍스트로 다시 변환해서
-•	결과를 딱 꺼내주는 것까지 해줌.
-🔍 pipeline()에서 가능한 작업 유형들
-작업 유형	설명
-"text-generation"	텍스트 이어쓰기 (GPT류 모델)
-"text-classification"	감성분석, 스팸 분류 등
-"question-answering"	질문 응답
-"summarization"	요약하기
-"translation"	번역
-"zero-shot-classification"	미리 학습 안 한 분류
-📌 용어 병기
-영어	한글	설명
-pipeline	파이프라인	AI 모델 사용을 쉽게 해주는 자동 실행 도구
-text-generation	텍스트 생성	문장을 이어서 만들어주는 작업
-tokenizer	토크나이저	문장을 숫자(토큰)로 바꿔주는 도구
-model	모델	텍스트를 이해하고 생성하는 AI 두뇌
-✅ 정리
-pipeline은 복잡한 AI 모델 사용을 한 줄로 단순화해주는 도구로,
-텍스트 생성, 번역, 분류 등 다양한 작업을 자동으로 처리할 수 있게 해줌.
-사용자는 그냥 "하고 싶은 일"과 "어떤 모델 쓸지"만 알려주면 됨.
+**Image pipelines**
+image-to-text: 이미지를 보고 텍스트 설명 생성
+image-classification: 이미지 속 대상을 분류
+object-detection: 이미지 속 객체의 위치를 찾고 무엇인지 식별
+
+**Audio pipelines**
+automatic-speech-recognition: 음성을 텍스트로 변환
+audio-classification: 오디오를 범주별로 분류
+text-to-speech: 텍스트를 음성으로 변환
+
+**Multimodal pipelines**
+image-text-to-text: 이미지와 텍스트를 함께 입력받아, 그에 맞는 텍스트 응답을 생성하는 기능
+
 
 ## positional embeddings
 Transformer가 문장의 **단어 순서(위치)**를 이해할 수 있도록 도와주는 장치. Transformer 모델이 단어의 ‘순서’ 정보를 알 수 있도록 각 단어 위치에 고유한 숫자 벡터를 더해주는 것. 
@@ -11341,9 +11325,12 @@ Container	실제로 작업이 실행되는 공간 (CPU+RAM 등 리소스 포함)
 ## zero-shot classification
 ✅ 한 줄 정의
 **“모델이 한 번도 훈련(training)받지 않은 라벨(label)을 사용해서 분류할 수 있는 능력”**
+
 즉,
 ❌ 기존 분류 모델처럼 ‘정답 데이터’(labeled data)로 미리 학습하지 않고도
 ✅ 텍스트를 바로 분류할 수 있는 것
+
+분류에 사용할 라벨을 사용자가 직접 지정(원하는 기준을 직접 줄 수 있다)할 수 있기 때문에, pretrained 모델이 원래 가지고 있던 라벨에 의존할 필요가 없음
 
 🔍 쉽게 설명해볼게요
 기존 방식 (supervised classification)은:
