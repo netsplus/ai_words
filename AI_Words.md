@@ -9897,11 +9897,13 @@ o	요약은: 텍스트 → 텍스트
 ## tensix core
 Tenstorrent 칩 안에서 AI 연산을 실제로 해 주는 "작은 두뇌". Wormhole의 경우 카드 당 2개의 칩이 장착되어 있고, 각 칩 안에 무수히 많은 Tensix Cores가 위치해 있음.
  
+https://github.com/tenstorrent/tt-metal/raw/main/docs/source/common/images/tenstorrent-wormhole-logical-noc-diagram.webp 
 그림 1. 위 이미지는 Wormhole 카드의 칩 구조를 보여주고 있음 (D = DRAM, T = Tensix, E = Ethernet, A = ARC/management, P = PCIe).
 
 각 Tensix Core에는 5개의 RISC-V CPUs와 2 NoC 인터페이스, SFPU 벡터 유닛, FPU 매트릭스 유닛 그리고 paker와 unpakcer로 구성되어 있음. 또한 1.5MB의 SRAM도 있는데, 이 SRAM은 hold transient data(임시 데이터 저장), 다른 콤퍼넌트 간 데이터 교환, 전송에 사용 됨. 하기 이미지는 Tensix Core의 구조도를 보여 줌(파란색 화살표: 명령어 디스패치(해석; 제어 스케줄링 + 분배의 의미), 갈색 화살표: 데이터 전송/교환을 의미)
 
- 
+
+https://github.com/tenstorrent/tt-metal/blob/main/docs/source/common/images/tenstorrent-tensix-rough-block-diagram.webp
 그림 2. 파란색 상자는 5개의 RISC-V CPU를 뜻함. 파란색 화살표는 명령어 디스패치(해석; 스케줄링 + 분배의 의미), 갈색 화살표는 데이터 전송/교환을 의미. 결국 RISC-V CPU는 NoC/Matrix/Vector/(Un)pakcer를 제어, 분배 역할을 하여 각 유닛들이 실제 연산을 할 수 있게 함.
 일반적인 데이터의 흐름은 아래와 같음.
 •	NoC interface 0은 DRAM 혹은 다른 Tensix Core로부터 데이터를 읽어 들여옴
@@ -9910,15 +9912,18 @@ Tenstorrent 칩 안에서 AI 연산을 실제로 해 주는 "작은 두뇌". Wor
 •	Packer는 Unpacker가 변형한 포맷의 데이터를 원래 원형(일반 바이너리 데이터)으로 되돌림.
 •	NoC interface 1은 결과 데이터를 DRAM이나 다른 Tesix Core로 보냄
 
- 
+
+https://github.com/tenstorrent/tt-metal/blob/main/docs/source/common/images/tenstorrent-tensix-rough-block-diagram-dataflow.webp
 그림 3. Tensix Core내에서의 전형적인 데이터 흐름도. 그림 상으로는 적색 화살표인 내부 네트워크(NoC)는 원형 단방향 구조로 표현되어 있지만, 두 개의 NoC가 서로 반대 방향으로 데이터를 흘려주기 때문에, 칩 전체적으로는 양방향 통신에 가까운 quasi-full-duplex 방식으로 동작함. 이로써 두 개의 NoC가 동시에 데이터를 보내고 받을 수 있음. 결과적으로 데이터 전송 속도가 빨라지고, 병목 현상이 줄어듦. 이러한 단방향 구조는 소모 전력(power)을 줄이고, 칩 면적(silicon area)도 절약함.
 Noc: 칩 안에서 Tensix Core끼리 데이터를 주고받게 해주는 통신망
 
- 
+
+https://github.com/tenstorrent/tt-metal/blob/main/docs/source/common/images/tenstorrent-tensix-rough-kernel-blocks.webp
 그림 4. 5개의 RISC-V 코어가 있으니 개발자는 그에 맞는 5개의 프로그램이 필요하다고 생각할 수 있지만, 실제로는 개발자는 Reader Kernel, Compute Kernel, Writer Kernel 세 부분으로 프로그램을 작성하면 되기 때문에 개발자의 프로그램 작성 부담을 줄임.
 그림 4와 그림 5는 세 개의 Kernel 영역이 버퍼 용도로 SRAM을 사용하여 데이터를 주고 받는다는 것을 설명함.
  
 그림 5. Reader, Compute, Writer Kernel 통신 형상
+https://github.com/tenstorrent/tt-metal/blob/main/docs/source/common/images/tenstorrent-circular-buffer-send-data-cross-kernel-or-itself.webp
 
 
 ## tensor
@@ -10688,7 +10693,7 @@ Transformer가 단어 간의 문맥 관계를 깊이 이해하려면:
 이 과정을 32번 반복하겠다는 소리.
 그리고 이 decoder layer 안에는 attention layer, MLP(=feedforward neural network= multilevel perceptron), layernorm가 있음.
 
-underlying architecture
+## underlying architecture
 “속에 숨어 있는 핵심 구조”, 즉 **“기본 뼈대”**를 말함
 
 🔷 한 줄 정의
