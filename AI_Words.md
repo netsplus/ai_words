@@ -1037,6 +1037,69 @@ AI는 거울과 비슷합니다.
 👉 모델의 편향은 “이전 모델 + 데이터 + 학습 방식(목표)”에서 모두 생길 수 있다는 뜻이야.
 
 
+## bi-directional attention (양방향 attention)
+BERT 같은 encoder-only 모델을 설명하는 말이에요.
+
+핵심은 이거예요:
+
+Encoder 모델은 문장을 “이해”하기 위해 문장 안의 모든 단어를 서로 동시에 보게 만든다.
+
+예를 들어 문장이 있다고 해봅시다.
+
+나는 어제 학교에 갔다.
+
+Encoder 모델에서는 학교에라는 단어를 처리할 때, 앞 단어뿐 아니라 뒤 단어까지 전부 볼 수 있어요.
+
+
+나는  어제  학교에  갔다
+ ↑     ↑      ↑      ↑
+모든 단어가 서로를 볼 수 있음
+
+그래서 bi-directional attention, 즉 양방향 attention이라고 부릅니다.
+
+반대로 GPT 같은 decoder-only 모델은 보통 왼쪽에서 오른쪽으로 글을 생성하죠.
+
+예를 들어 GPT가 학교에 다음 단어를 예측할 때는:
+나는 어제 학교에 ___
+
+앞에 나온 단어들은 볼 수 있지만, 아직 생성되지 않은 뒤 단어는 볼 수 없어요.
+
+나는  어제  학교에  갔다
+ ↑     ↑      ↑      X
+앞쪽만 볼 수 있음
+
+
+그래서 GPT 계열은 보통 causal attention, 단방향 attention을 씁니다.
+
+그리고 “auto-encoding model”이라는 말은 대략 이런 뜻이에요.
+
+입력 문장을 보고, 그 문장의 일부를 복원하거나 이해하는 방식으로 학습하는 모델
+
+대표적으로 BERT가 있어요.
+
+BERT는 이런 식으로 학습합니다.
+
+나는 어제 [MASK]에 갔다.
+
+모델이 [MASK]에 들어갈 단어를 맞히는 거예요.
+
+정답:
+학교
+
+이때 BERT는 [MASK] 앞뒤 문맥을 모두 볼 수 있습니다.
+
+나는 어제 [MASK]에 갔다
+앞 문맥도 보고, 뒤 문맥도 봄
+
+그래서 문장 이해에 강합니다.
+
+정리하면:
+모델 종류	구조	attention 방향	주 용도	예시
+Encoder-only	Transformer의 encoder만 사용	양방향	문장 이해, 분류, 검색, 임베딩	BERT
+Decoder-only	Transformer의 decoder만 사용	단방향	텍스트 생성	GPT
+Encoder-decoder	encoder + decoder	입력 이해 + 출력 생성	번역, 요약	T5, BART
+
+
 ## Binary Sentiment Classification
 자연어 처리(NLP)에서 매우 많이 사용되는 기본적인 분류 작업.
 
