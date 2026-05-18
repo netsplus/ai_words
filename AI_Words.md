@@ -864,6 +864,44 @@ loss가 요동침
 “항상 좋은 값”은 없다.
 “문제·데이터·하드웨어에 맞는 값”만 있다.
 
+
+## BERT
+BERT는 Transformer의 encoder만 사용하는 모델이에요.
+
+그리고 bidirectional, 즉 양방향이라는 말은 문장을 볼 때 앞뒤 문맥을 모두 본다는 뜻입니다.
+
+예를 들어:
+나는 어제 [MASK]에 갔다.
+
+여기서 [MASK]를 맞힐 때 BERT는:
+앞쪽: 나는 어제
+뒤쪽: 에 갔다
+
+둘 다 봅니다.
+
+그래서 학교, 회사, 병원 같은 장소 단어가 들어갈 수 있겠다고 판단할 수 있어요.
+
+BERT는 정답 라벨이 붙어 있지 않은 일반 텍스트를 가지고 미리 학습했다
+
+예를 들어 이런 문장들이 있다고 해봅시다.
+고양이가 소파 위에서 잔다.
+오늘 날씨가 매우 춥다.
+나는 점심으로 김치찌개를 먹었다.
+
+이 문장들에는 별도의 정답 라벨이 없어요.
+
+예를 들어:
+이 문장은 긍정이다
+이 단어는 사람 이름이다
+이 질문의 답은 이것이다
+
+이런 라벨이 안 붙어 있다는 말이에요.
+
+그냥 인터넷 글, 책, 위키피디아 같은 일반 문장들을 많이 읽으면서 언어 감각을 먼저 배웁니다.
+
+이걸 pretraining, 즉 사전학습이라고 해요.
+
+
 ## BERTopic
 BERT(Bidirectional Encoder Representations from Transformers) 기반의 문장 임베딩(Sentence Embedding)을 활용하여 **토픽 모델링(Topic Modeling)**을 수행하는 방법. 즉, 단어 수준이 아니라 **문장이나 문서 전체의 의미(semantic meaning)**를 반영해 주제를 분류.
 
@@ -2046,6 +2084,23 @@ o	라이브러리(예: numpy, ttnn)를 어디서 찾을지
 Tenstorrent tt-metal을 설치할 때도 내부에 이런 명령이 돌아감:
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 ninja
+
+
+## code snippet
+코드 조각, 짧은 코드 예시, 부분 코드 정도로 이해하면 돼.
+
+즉, 전체 프로그램이 아니라 특정 기능이나 개념을 보여주는 짧은 코드 일부를 말해.
+
+예를 들어 Python에서:
+def add(a, b):
+    return a + b
+
+이건 전체 애플리케이션은 아니지만, 두 숫자를 더하는 기능을 보여주는 code snippet이야.
+
+정리하면:
+
+code snippet = 전체 프로그램이 아니라, 특정 작업이나 기능을 보여주는 짧은 코드 조각.
+
 
 ## Confusion matrix
 **분류 모델의 성능을 분석하기 위해 사용하는 표(table)**로, 모델이 얼마나 정확하게 각 클래스를 예측했는지를 한눈에 시각적으로 보여주는 도구.
@@ -6946,6 +7001,7 @@ NER도
 
 NER은 태스크(task) 이름이고, 학습과 추론 둘 다에서 등장하지만 실제 결과를 뽑아내는 건 추론 단계다.
 
+
 ## NLP (Natural Language Processing)
 - 인간 언어와 관련된 모든 것을 이해하는 데 중점을 둔 언어학 및 머신러닝 분야. NLP 과제의 목적은 단일 단어를 개별적으로 이해하는 것뿐만 아니라 그 단어들의 맥락(Context)을 이해하는 데 있음.
 
@@ -9475,7 +9531,7 @@ AI는 단어 하나만 보지 않음.
 → 경영진의 자신감 변화
 
 
-## Sequence-to-Sequence Model
+## Sequence-to-Sequence Model (=Encoder-decoder models )
 자연어 처리(NLP)에서 매우 중요한 구조이며, 번역, 요약, 챗봇, 음성 인식 등 다양한 분야에 활용 됨.
 
 🔷 1. 개념: Sequence-to-Sequence란?
