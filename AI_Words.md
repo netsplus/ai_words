@@ -8538,6 +8538,123 @@ Tenstorrent와 무슨 관계?	PyTorch로 만든 모델을 NPU에서 실행하려
 사용 예시:
 •	Transformer 모델을 edge device에서 빠르게 돌릴 때 양자화 사용
 
+
+## Qwen3-VL-32B-Instruct
+-	이미지, 영상, 텍스트를 함께 이해하는 AI 모델
+-	Visual Agent: PC나 모바일 화면을 보고 직접 조작할 수 있음.
+-	Visual Coding Boost: 이미지나 영상을 보고 코드를 만들 수 있음.
+-	Advanced Spatial Perception: 물체의 위치, 방향, 가려짐 등을 더 잘 이해(로봇, 자율주행, 3D 공간 이해 같은 데 도움)
+-	Long Context & Video Understanding: 엄청 긴 글이나 긴 영상도 이해할 수 있음
+-	Enhanced Multimodal Reasoning: 이미지 + 텍스트를 같이 보고 더 논리적으로 추론
+-	Upgraded Visual Recognition: 더 많은 종류의 사물을 알아 봄
+-	Expanded OCR: 이미지 속 글자 읽기 기능이 좋아짐. 
+-	Text Understanding on par with pure LLMs: 텍스트 이해도도 좋음. Qwen3-VL은 텍스트 이해력도 순수 언어모델 수준
+
+이미지/영상+텍스트 입력용 추천 생성 파라미터 설정값
+export greedy='false'
+export top_p=0.8
+export top_k=20
+export temperature=0.7
+export repetition_penalty=1.0
+export presence_penalty=1.5
+export out_seq_length=16384
+
+텍스트 입력용 추천 생성 파라미터 설정값
+export greedy='false'
+export top_p=1.0
+export top_k=40
+export repetition_penalty=1.0
+export presence_penalty=2.0
+export temperature=1.0
+export out_seq_length=32768
+greedy='false'
+Greedy decoding을 사용할지 말지 정하는 옵션. Greedy decoding은 모델이 다음 단어를 고를 때 항상 가장 확률이 높은 단어 하나만 선택하는 방식. 사과(45%), 바나나(25%), 포도(15%), 오렌지(5%)에서 greedy=true면 무조건 사과를 고름. 항상 1등 후보만 고르는 방식.
+greedy=true
+•	답변이 안정적임
+•	결과가 매번 비슷함
+•	창의성은 낮음
+•	긴 글에서는 딱딱하거나 반복될 수 있음
+greedy=false
+•	답변이 더 자연스럽고 다양함
+•	같은 질문에도 답이 조금씩 달라질 수 있음
+•	창의성이 생김
+•	대신 가끔 덜 정확하거나 튈 수 있음
+
+top_p=0.8
+top_p는 nucleus sampling이라고도 함. 다음 단어 후보들 중에서, 확률이 높은 순서대로 더했을 때 누적 확률이 p가 될 때까지의 후보만 사용. A(40%), B(25%), C(15%), D(10%), E(5%), F(5%)에서 top_p=0.8이면 누적 확률 80%까지 봄. 따라서 A, B, C까지만 후보로 두고, D/E/F는 제외. 모델이 너무 낮은 확률의 이상한 단어를 고르지 않도록 후보 범위를 상위 80% 안으로 제한 하겠다는 뜻.
+
+값이 낮으면?
+예:
+Copytop_p=0.5
+•	훨씬 보수적
+•	안정적
+•	창의성 낮음
+•	답변이 단조로울 수 있음
+
+값이 높으면?
+예:
+Copytop_p=0.95
+top_p=1.0
+•	더 다양한 표현 가능
+•	창의성 증가
+•	예상 밖의 답변 가능
+•	헛소리 가능성도 증가
+
+top_k=20
+top_k는 다음 단어 후보 중에서 확률 상위 k개만 남기는 방식. 다음 단어 후보 중 확률이 높은 상위 20개만 고려. 예를 들어 모델 어휘가 15만 개라고 해도, 매번 그중 상위 20개만 보고 고르는 식.
+
+값이 낮으면?
+예:
+Copytop_k=5
+•	매우 안정적
+•	이상한 단어가 나올 가능성 낮음
+•	표현이 단조로워질 수 있음
+
+값이 높으면?
+예:
+Copytop_k=100
+•	더 다양한 표현 가능
+•	창의성 증가
+•	엉뚱한 단어 선택 가능성 증가
+
+temperature=0.7
+temperature는 모델 답변의 랜덤성 / 창의성 / 과감함을 조절하는 값. 낮을수록 차분하고 확실한 답변. 높을수록 자유롭고 창의적인 답변.
+
+temperature	느낌
+0	거의 항상 가장 확실한 답
+0.1 ~ 0.3	매우 보수적, 정확성 위주
+0.5 ~ 0.7	안정적이면서 자연스러움
+0.8 ~ 1.0	다양하고 자유로움
+1.2 이상	창의적이지만 헛소리 가능성 증가
+
+temperature=0.7은 일반적인 설정. 너무 딱딱하지 않으면서도, 너무 엉뚱하지 않게 답하게 하는 정도
+
+repetition_penalty=1.0
+repetition_penalty는 모델이 같은 단어, 같은 문장, 같은 표현을 반복하지 않도록 하는 패널티. 
+
+값	의미
+1.0	반복 패널티 없음
+1.1	약한 반복 억제
+1.2 ~ 1.3	꽤 반복 억제
+1.5 이상	반복은 줄지만 문장이 어색해질 수 있음
+
+
+repetition_penalty=1.0은 반복 패널티를 따로 걸지 않는다는 뜻. 요즘 모델들은 기본적으로 반복을 어느 정도 잘 피하기 때문에, 불필요하게 repetition_penalty를 높이면 오히려 문장이 어색해질 수 있음.
+
+presence_penalty=1.5
+presence_penalty는 이미 나온 단어나 주제를 다시 쓰는 것을 줄이는 옵션. repetition_penalty와 비슷하지만 약간 다름.
+
+repetition_penalty
+같은 토큰이나 표현을 반복하는 것을 직접적으로 억제
+presence_penalty
+이미 등장한 내용이 다시 나오는 것을 줄이고, 새로운 내용을 말하도록 유도
+
+presence_penalty=1.5는 꽤 강한 편. 이 설정은 답변이 반복되는 걸 줄이고, 더 다양한 내용을 말하게 만듬.
+
+out_seq_length=16384
+out_seq_length는 모델이 생성할 수 있는 최대 출력 길이. 즉, 답변을 최대 몇 토큰까지 생성할 수 있는가를 정함. 최대 약 16,384 토큰까지 출력할 수 있다는 뜻. 이 값이 크다고 해서 항상 답변이 길어지는 건 아님. 그냥 최대 한도가 커지는 것. 예를 들어 질문이 간단하면 모델은 짧게 답할 수 있음.
+
+
 ## random seed
 1) 랜덤 시드가 뭐냐: “랜덤 생성기의 시작 버튼 번호”
 
