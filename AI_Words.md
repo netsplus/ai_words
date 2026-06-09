@@ -400,6 +400,37 @@ Weight는 어떤 역할인가요?	모델 내부의 고정된 연결 강도로서
 Attention = 모델이 “어디에 주의를 기울여야 할지” 스스로 정하게 해주는 기법
 → 인간이 문장에서 중요 단어를 파악하듯, AI도 그런 “주의 분배”를 하게 만드는 핵심 기술
 
+
+## attention mask
+어떤 토큰이 실제 단어이고, 어떤 토큰이 padding인지 알려주는 표시.
+
+```python
+1 = 실제 토큰
+0 = padding token
+```
+
+예를 들어 문장 길이를 맞추려고 뒤에 padding을 붙이면:
+```python
+input_ids:      [101, 1045, 2293, 102, 0, 0]
+attention_mask: [1,   1,    1,    1,   0, 0]
+```
+
+모델은 attention_mask를 보고 0인 부분은 크게 신경 쓰지 않게 돼.
+
+```python
+문장들
+↓
+tokenizer
+↓
+input_ids, attention_mask
+↓
+PyTorch tensor로 변환   // Transformer 모델은 입력으로 tensor만 받음. 왜냐하면 신경망 계산은 GPU/CPU에서 큰 숫자 배열을 빠르게 계산하는 방식으로 돌아가고, 그때 사용하는 표준 데이터 형태가 tensor이기 때문
+↓
+model에 입력
+↓
+예측 결과 출력
+```
+
 ## attention score
 1️⃣ 한 문장 정의
 
@@ -736,6 +767,88 @@ Cross-Entropy Loss 계산
 역전파로 수억~수십억 개의 weight 수정
 
 이 과정을 수십억 번 반복하면서 모델이 언어를 학습합니다. (이 이유 때문에 성능 좋은 GPU와 전기 비용이 높게 나오는 이유)
+
+
+## batch
+batch는 여러 데이터를 한 묶음으로 처리하는 거야.
+
+예를 들어 문장 하나씩 처리하면:
+```python
+문장 1 → 모델
+문장 2 → 모델
+문장 3 → 모델
+```
+
+이렇게 따로따로 넣는 방식이야.
+
+하지만 batch로 처리하면:
+```python
+[문장 1, 문장 2, 문장 3] → 모델
+```
+
+이렇게 한 번에 넣을 수 있어.
+
+예를 들어:
+```python
+sentences = [
+    "I love this movie!",
+    "This is terrible.",
+    "The food was okay."
+]
+
+inputs = tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
+```
+
+이렇게 하면 여러 문장을 한 번에 모델에 넣을 수 있는 형태로 만들어줘.
+
+왜 batch 처리가 필요할까?
+
+여러 문장은 길이가 다를 수 있어.
+
+예를 들어:
+```python
+"I love it"
+"This movie was absolutely wonderful and surprisingly emotional"
+```
+
+첫 번째 문장은 짧고, 두 번째 문장은 길어.
+
+그런데 모델에 넣으려면 보통 같은 길이의 숫자 배열로 맞춰야 해.
+
+그래서 tokenizer가 이런 처리를 해줘:
+
+
+**Padding**
+짧은 문장에 빈칸 역할의 토큰을 추가해서 길이를 맞춤.
+
+```python
+[101, 1045, 2293, 2009, 102, 0, 0, 0]
+[101, 2023, 3185, 2001, 2307, 102, 0, 0]
+```
+
+여기서 0 같은 값이 padding token일 수 있어.
+
+**Truncation**
+너무 긴 문장은 모델이 처리할 수 있는 길이에 맞게 자름.  예를 들어 모델이 최대 512개 토큰만 받을 수 있는데 문장이 800개 토큰이면, 뒤쪽 일부를 잘라서 512개 이하로 맞추는 거야.
+
+```python
+아주 긴 문장 → 최대 길이까지만 자름
+```
+
+**Attention mask**
+모델에게 “어디가 진짜 단어고, 어디가 padding인지” 알려주는 표시야.
+
+예를 들어:
+```python
+input_ids:      [101, 1045, 2293, 102, 0, 0]
+attention_mask: [1,   1,    1,    1,   0, 0]
+```
+
+여기서:
+
+1 = 실제 토큰
+0 = padding이니까 무시해도 되는 부분
+
 
 ## batch size
 batch size는
@@ -1506,7 +1619,48 @@ Chain of Thought: 중간 사고 과정을 따라가며 푸는 방식
 추론 능력은 “실력”입니다.
 
 ## Checkpoint (체크포인트)
-학습 도중 모델의 상태를 저장한 파일. 문제가 생겼을 때 이어서 학습하거나, 중간 결과를 다시 불러올 수 있게 함. 
+모델의 상태를 저장한 파일. 문제가 생겼을 때 이어서 학습하거나, 중간 결과를 다시 불러올 수 있게 함. 
+
+모델 구조 정보 + 학습된 파라미터/가중치가 저장된 묶음
+
+예를 들면 "bert-base-cased" 안에는 대략 이런 정보가 있어:
+```python
+이 모델은 BERT 구조다
+레이어는 12개다
+hidden size는 768이다
+attention head는 12개다
+대소문자를 구분한다
+이미 대량의 텍스트로 사전학습되어 있다
+```
+
+그래서 이 이름 하나만 넘겨도 Hugging Face가 필요한 파일들을 알아서 가져와.
+
+```python
+from transformers import AutoModel
+
+model = AutoModel.from_pretrained("bert-base-cased")
+```
+
+"bert-base-cased" ==> 체크포인트 이름
+
+model = AutoModel.from_pretrained("bert-base-cased")을 실행하면:
+```python
+1. Hugging Face Hub에서 "bert-base-cased" checkpoint를 찾음
+2. config 파일을 읽음
+3. 이 checkpoint가 BERT 구조라는 걸 확인
+4. BERT 모델 클래스를 생성
+5. pretrained weights를 다운로드
+6. 모델에 weights를 로드
+7. model 객체 반환
+```
+
+그리고 한 번 다운로드한 파일은 로컬 캐시에 저장돼.
+
+그래서 다음에 같은 모델을 다시 불러오면:
+```python
+처음 실행 → 인터넷에서 다운로드
+두 번째 실행 → 캐시에서 불러옴
+```
 
 
 ## carbon footprint
@@ -2505,6 +2659,50 @@ token embedding은 "기본 의미"
 context vector는 "문맥 반영된 의미"
 
 입니다.
+
+
+## continuous batching
+일반적인 batching은 여러 요청을 모아서 한 번에 처리하는 방식입니다.
+
+예를 들어 식당으로 비유하면:
+```python
+손님 10명을 모아서 한 번에 주문 처리
+```
+
+그런데 LLM 요청은 사람마다 길이가 다릅니다.
+
+```python
+사용자 A: 짧은 답변 필요
+사용자 B: 긴 답변 필요
+사용자 C: 중간 길이 답변 필요
+```
+
+일반 batching에서는 짧은 요청이 끝나도 긴 요청 때문에 기다리는 비효율이 생길 수 있습니다.
+
+continuous batching은 요청이 끝나는 대로 새 요청을 계속 끼워 넣습니다.
+
+비유하면:
+```python
+빈 자리가 생기면 바로 다음 손님을 앉히는 식당 운영 방식
+```
+
+입니다.
+
+그래서 GPU가 놀지 않고 계속 일하게 됩니다.
+
+문단의:
+
+keep the GPU busy by constantly feeding it work
+
+는 바로 이 뜻입니다.
+
+즉:
+```python
+GPU가 쉬지 않도록 계속 요청을 넣어서 처리 효율을 높인다
+```
+
+는 말입니다.
+
 
 ## convolution
 신호 처리(signal processing), 영상 처리(image processing), AI 딥러닝(CNN, Convolutional Neural Network) 에서 핵심적으로 쓰이는 연산
@@ -4483,6 +4681,46 @@ Flan-T5는 무엇인가요?	T5 모델을 명령어 기반으로 fine-tuning해�
 어떤 작업에 쓰이나요?	번역, 요약, 문서 생성, 질의응답 등 거의 모든 텍스트 기반 작업
 무엇이 특별한가요?	프롬프트만 바꾸면 다양한 작업 수행 가능, zero-shot 성능 우수
 
+
+## Flash Attention 2
+LLM에서 가장 무거운 연산 중 하나가 attention 계산입니다.
+
+Attention은 모델이 문장 안에서 어떤 단어가 어떤 단어와 관련 있는지 계산하는 과정입니다.
+
+예를 들어:
+```python
+"철수는 영희에게 책을 줬다. 그는 웃었다."
+```
+
+여기서 “그”가 철수인지, 영희인지 파악하려면 앞 문맥을 봐야 합니다. 이런 관계를 계산하는 게 attention입니다.
+
+그런데 이 attention 계산은 토큰 길이가 길어질수록 매우 비싸집니다.
+
+Flash Attention 2는 이 attention 계산을 GPU에서 훨씬 효율적으로 처리하게 해주는 최적화 기법입니다.
+
+간단히 말하면:
+```python
+Flash Attention 2 = attention 계산을 더 빠르고 메모리 적게 쓰게 만드는 기술
+```
+
+입니다.
+
+
+## forward pass
+모델이 입력을 받아서 출력을 만드는 과정
+
+예를 들어:
+```python
+문장 입력
+→ 토큰 임베딩
+→ Attention 계산
+→ Feed Forward Layer
+→ 최종 출력
+```
+
+이 전체 흐름이 forward pass야.
+
+
 ## Gated Recurrent Unit (GRU, 게이트 순환 유닛)
 LSTM을 단순화한 버전
 
@@ -4940,7 +5178,7 @@ Harmony 포맷은 텍스트뿐만 아니라 향후 이미지 생성 요청, 코�
 ## hidden state
 1️⃣ 히든 상태(hidden state)가 뭐냐?
 
-히든 상태는 👉 지금까지 읽은 정보의 요약 벡터입니다.
+히든 상태는 지금까지 읽은 정보의 요약(문맥 정보가 담긴 숫자) 벡터입니다.
 
 RNN은 문장을 한 단어씩 읽습니다.
 
@@ -5112,6 +5350,199 @@ Transformer는:
 | 구조    | 순차적                | 병렬적                      |
 | 정보 방식 | 압축 기억              | 분산 표현 유지                 |
 | 문제    | long dependency 약함 | attention으로 해결           |
+
+
+## high-dimensional vector
+숫자가 아주 많이 들어 있는 벡터.
+
+예를 들어 보통 우리가 생각하는 2차원 벡터는 이래:
+```python
+[3.2, 1.7]
+```
+
+숫자가 2개지.
+
+3차원 벡터는:
+```python
+[3.2, 1.7, 5.9]
+```
+
+숫자가 3개야.
+
+그런데 Transformer에서는 토큰 하나를 표현할 때 보통 이런 식이야:
+```python
+[0.12, -0.33, 0.58, ..., 0.91]
+```
+
+이 안에 숫자가 768개 있을 수 있어.
+
+그래서 고차원 벡터, 즉 high-dimensional vector라고 불러.
+
+2. Transformer 출력은 보통 3차원이다
+세 차원은 이거야:
+```python
+[batch size, sequence length, hidden size]
+```
+
+예시 출력:
+```python
+torch.Size([2, 16, 768])
+```
+
+이걸 하나씩 보면:
+```python
+2   = batch size
+16  = sequence length
+768 = hidden size
+```
+
+3. Batch size
+뜻은:
+
+한 번에 처리하는 문장 개수
+
+야.
+
+예시에서 문장 두 개를 tokenizer에 넣었지:
+```python
+raw_inputs = [
+    "I've been waiting for a HuggingFace course my whole life.",
+    "I hate this so much!",
+]
+```
+
+문장이 2개니까 batch size는 2야.
+
+그래서 출력의 첫 번째 숫자가 2:
+```python
+torch.Size([2, 16, 768])
+```
+
+4. Sequence length
+뜻은:
+
+각 문장이 tokenizer를 거쳐 숫자 토큰 몇 개로 표현되었는지
+
+야.
+
+예를 들어 문장이 tokenizer를 거쳐 이런 식으로 바뀐다고 해보자:
+```python
+"I hate this so much!"
+→ [101, 1045, 5223, 2023, 2061, 2172, 999, 102]
+```
+
+이러면 길이는 8이야.
+
+그런데 batch로 여러 문장을 처리할 때는 문장 길이를 맞추기 위해 padding을 붙일 수 있어.
+
+예시에서는 두 문장의 길이가 최종적으로 16으로 맞춰졌기 때문에 sequence length가 16이야.
+
+그래서 출력의 두 번째 숫자가 16:
+```python
+torch.Size([2, 16, 768])
+```
+
+즉:
+```python
+문장 2개
+각 문장은 토큰 16개짜리로 처리됨
+```
+
+이라는 뜻이야.
+
+5. Hidden size
+뜻은:
+
+각 토큰 하나를 몇 개의 숫자로 표현하는지
+
+야.
+
+예시에서는 hidden size가 768이야.
+
+즉, 토큰 하나마다 768개의 숫자가 붙어 있어.
+
+예를 들어 한 토큰의 hidden state는 이런 느낌이야:
+
+```python
+토큰 하나
+→ [0.12, -0.45, 0.89, ..., 0.03]
+```
+
+이 안에 숫자가 768개 있는 거야.
+
+그래서 전체적으로는:
+```python
+문장 2개
+각 문장마다 토큰 16개
+각 토큰마다 768차원 벡터
+```
+
+가 되는 거야.
+
+6. torch.Size([2, 16, 768])의 의미
+코드:
+```python
+outputs = model(**inputs)
+print(outputs.last_hidden_state.shape)
+```
+
+결과:
+```python
+torch.Size([2, 16, 768])
+```
+
+이건 이렇게 읽으면 돼:
+```python
+outputs.last_hidden_state의 모양은 [2, 16, 768]이다.
+```
+
+즉:
+```python
+2개의 문장이 있고,
+각 문장은 16개의 토큰으로 구성되어 있고,
+각 토큰은 768개의 숫자 벡터로 표현되어 있다.
+```
+
+그림으로 보면:
+```python
+outputs.last_hidden_state
+=
+[
+  문장 1 [
+    토큰 1의 768차원 벡터,
+    토큰 2의 768차원 벡터,
+    ...
+    토큰 16의 768차원 벡터
+  ],
+
+  문장 2 [
+    토큰 1의 768차원 벡터,
+    토큰 2의 768차원 벡터,
+    ...
+    토큰 16의 768차원 벡터
+  ]
+]
+```
+
+7. 왜 “high-dimensional”이라고 부르냐?
+마지막 값인 hidden size가 크기 때문이야.
+
+예시에서는:
+```python
+hidden size = 768
+```
+
+작은 모델에서도 768 정도는 흔하고, 큰 모델에서는:
+```python
+3072 이상
+```
+
+이 될 수도 있어.
+
+즉 토큰 하나를 표현하는 데 숫자 수백 개, 수천 개를 쓰는 거야.
+
+그래서 고차원 벡터라고 부르는 거야.
+
 
 ## hyperparameter
 **하이퍼파라미터(hyperparameter)**는
@@ -6465,7 +6896,7 @@ AI 파이프라인	임베딩 벡터 → 로지스틱 회귀로 분류
 1️⃣ logits이란 무엇인가?
 
 로짓(logits) 은
-모델의 마지막 선형 변환(linear transformation, 선형 변환) 결과로 나오는 정규화되지 않은 점수 값입니다.
+모델의 마지막 선형 변환(linear transformation, 선형 변환) 결과로 나오는 **정규화되지 않은 점수** 값입니다.
 
 쉽게 말하면:
 
@@ -6508,6 +6939,7 @@ vocab_size = 50,000 이면
 
 각 토큰 위치마다 50,000개의 점수가 나옵니다.
 
+
 3️⃣ 왜 logits을 바로 확률로 쓰지 않을까?
 
 왜냐하면 logits은:
@@ -6519,6 +6951,7 @@ vocab_size = 50,000 이면
 합이 1이 아님
 
 그래서 softmax(소프트맥스) 를 씌워 확률로 변환합니다.
+
 
 4️⃣ 직관적으로 이해해보자
 
@@ -6545,6 +6978,7 @@ car ≈ 0.02
 
 
 이렇게 확률이 됩니다.
+
 
 5️⃣ 손실 함수(loss function, 손실 함수)와 logits
 
@@ -6905,6 +7339,123 @@ Model Tree는 허깅페이스(Hugging Face)와 같은 모델 공유 플랫폼에
 다양성: 사용자의 컴퓨터 사양이 제각각이기 때문에, 아주 많이 압축한 버전(용량은 작지만 조금 멍청함)부터 적게 압축한 버전(용량은 크지만 똑똑함)까지 수십 가지의 파생 버전이 만들어집니다.
 아이콘 의미: 옆에 붙은 아이콘들은 이 양자화 작업을 수행한 유명한 커뮤니티 유저나 단체(예: GGUF 포맷을 만드는 유저 등)를 나타냅니다.
 요약하자면: 이 차트는 gpt-oss-120b라는 훌륭한 원재료를 가지고, 개발자들이 **특수 목적용으로 개조(Adapters/Finetunes)**하거나, 성능을 합치고(Merges), 컴퓨터에 맞게 다이어트(Quantizations) 시켜놓은 방대한 생태계를 보여주는 지도라고 할 수 있습니다.
+
+
+## model head
+model head는 Transformer 본체 뒤에 붙는 “작업용 출력 층”이야.
+
+구조를 단순하게 보면:
+```python
+입력 문장
+↓
+tokenizer
+↓
+input_ids
+↓
+Transformer 본체
+↓
+hidden states
+↓
+model head
+↓
+최종 출력
+```
+
+Transformer 본체는 문장을 이해해서 hidden states라는 큰 숫자 벡터를 만들어.
+
+예를 들면 출력이:
+```python
+torch.Size([2, 16, 768])
+```
+
+이면 뜻은:
+```python
+문장 2개
+각 문장 16개 토큰
+각 토큰마다 768차원 벡터
+```
+
+이거야.
+
+그런데 감정 분석에서 우리가 원하는 건 이런 거야:
+```python
+문장 1 → positive or negative
+문장 2 → positive or negative
+```
+
+즉, 768차원짜리 복잡한 벡터가 아니라,
+각 문장마다 긍정 점수 / 부정 점수만 있으면 돼.
+
+그래서 model head가 필요해.
+
+모델 본체가 만든 복잡한 숫자 벡터를 사람이 원하는 의미 있는 결과로 바꿔준다라는 뜻.
+
+Transformer 본체의 출력은 이런 느낌이야:
+```python
+[0.12, -0.44, 0.93, ..., 0.08]
+```
+
+사람이 보면 이게 뭔지 알기 어렵지.
+
+model head는 이걸 감정 분석에 맞게 바꿔줘:
+```python
+negative 점수: -1.56
+positive 점수: 4.22
+```
+
+이제 이건 해석할 수 있어.
+```python
+positive 점수가 더 높으니까 긍정 문장이다
+```
+
+model head는 큰 벡터를 입력으로 받아서, 다른 크기의 벡터로 바꾼다.
+
+예를 들어 hidden state가 768차원이라고 해보자.
+
+그런데 감정 분석 라벨은 두 개야.
+
+```python
+NEGATIVE
+POSITIVE
+```
+
+그러면 model head는 보통 이런 변환을 해:
+```python
+768차원 벡터 → 2차원 벡터
+```
+
+즉:
+```python
+[숫자 768개] → [negative 점수, positive 점수]
+```
+
+이렇게 바꾸는 거야.
+
+project라고 수학적으로는 “투영한다”는 뜻인데,
+지금은 그냥:
+
+벡터의 크기/차원을 원하는 출력 크기로 변환한다
+
+정도로 이해하면 돼.
+
+model head는 보통 하나 또는 몇 개의 linear layer로 구성된다.
+
+linear layer는 딥러닝에서 숫자 벡터를 다른 크기의 숫자 벡터로 바꾸는 기본 층이야.
+
+예를 들어:
+```python
+768차원 입력 → linear layer → 2차원 출력
+```
+
+감정 분석에서는 이런 식이 될 수 있어:
+```python
+문장 표현 벡터 768개
+↓
+Linear layer
+↓
+[부정 점수, 긍정 점수]
+```
+
 
 
 ## MoE (Mixture of Experts, 전문가 혼합)
@@ -10430,7 +10981,7 @@ Softmax는 여러 개의 점수를 확률처럼 보이게 만들어 주는 함�
 
 2️⃣ 왜 필요한가?
 
-Attention score는 그냥 이런 값들입니다:
+Attention score(=logits)는 그냥 이런 값들입니다:
 
 [2.3, 1.1, -0.4, 3.0]
 
