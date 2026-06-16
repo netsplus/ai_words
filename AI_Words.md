@@ -3787,6 +3787,131 @@ A (no_think mode):
 ⚙️ 파인튜닝과 평가 분리	추론 능력 평가(CoT) vs 실전 응답 속도 제어
 🔁 다양한 어플리케이션	교육용, 실시간 시스템 등에서 필요에 따라 다르게 사용 가능
 
+
+## dynamic padding
+AI/딥러닝 학습(training)에서 dynamic padding은 주로 NLP나 음성처럼 입력 길이가 제각각인 데이터를 배치로 묶을 때, 각 배치 안에서 가장 긴 샘플 길이에 맞춰 그때그때 padding을 넣는 방식을 말해.
+
+예를 들어 문장 길이가 이렇게 있다고 해보자.
+```python
+문장 A: 5 tokens
+문장 B: 8 tokens
+문장 C: 3 tokens
+문장 D: 20 tokens
+```
+
+1. 일반 padding, static padding
+모든 데이터를 미리 정해진 최대 길이, 예를 들어 max_length=20에 맞춘다.
+```python
+A: 5  -> 20
+B: 8  -> 20
+C: 3  -> 20
+D: 20 -> 20
+```
+
+즉 짧은 문장도 전부 20 길이로 맞춘다. 구현은 단순하지만, 불필요한 padding이 많아져서 계산량과 메모리가 낭비될 수 있다.
+
+2. Dynamic padding
+전체 데이터셋의 최대 길이가 아니라, 현재 배치에서 가장 긴 길이에 맞춘다.
+
+예를 들어 배치 1이 다음과 같다면:
+```python
+A: 5 tokens
+B: 8 tokens
+C: 3 tokens
+```
+
+이 배치의 최대 길이는 8이므로:
+```python
+A: 5 -> 8
+B: 8 -> 8
+C: 3 -> 8
+```
+
+다른 배치에 20짜리 문장이 있으면 그 배치만 20까지 padding한다.
+```python
+D: 20
+E: 12
+F: 15
+
+=> 모두 20으로 padding
+
+```
+
+즉, batch마다 padding 길이가 동적으로 달라지는 것이 dynamic padding이다.
+
+Hugging Face에서도 DataCollatorWithPadding 같은 도구가 배치 내 가장 긴 시퀀스에 맞춰 동적으로 padding한다고 설명한다. Hugging Face 문서 기준으로 padding=True 또는 "longest"는 “배치에서 가장 긴 시퀀스에 맞춰 padding”하는 방식이다.
+
+왜 쓰는가?
+장점
+메모리 절약
+
+불필요한 padding token 수가 줄어든다.
+연산 속도 개선
+
+Transformer나 RNN이 padding된 토큰까지 처리해야 하는 경우가 많기 때문에 padding이 적을수록 계산량이 줄어든다.
+긴 문장이 일부만 있을 때 효율적
+
+전체 데이터셋 최대 길이가 512인데 대부분 문장이 30~80 토큰이면, 전부 512로 padding하는 건 낭비가 크다.
+
+예시
+문장 길이:
+```python
+[6, 7, 8, 50, 52, 55]
+```
+
+Static padding to max_length=55
+모든 문장을 55로 맞춤:
+```python
+[55, 55, 55, 55, 55, 55]
+```
+
+총 토큰 수:
+```python
+55 * 6 = 330
+```
+
+Dynamic padding, batch size=3
+배치 1:
+```python
+[6, 7, 8] -> max 8
+=> [8, 8, 8]
+```
+
+배치 2:
+```python
+[50, 52, 55] -> max 55
+=> [55, 55, 55]
+```
+
+총 토큰 수:
+```python
+8 * 3 + 55 * 3 = 24 + 165 = 189
+```
+
+훨씬 적은 토큰만 처리하면 된다.
+
+주의할 점
+Dynamic padding을 쓰면 배치마다 텐서 shape이 달라질 수 있다.
+
+```python
+batch 1 shape: [batch_size, 32]
+batch 2 shape: [batch_size, 128]
+batch 3 shape: [batch_size, 64]
+```
+
+일반적인 학습에서는 문제가 없지만, 일부 최적화 환경, 예를 들어 정적 shape을 선호하는 컴파일러, 특정 추론 엔진, TPU/XLA 환경에서는 고정 shape이 더 유리할 때도 있다.
+
+그래서 실무에서는 다음과 같은 타협도 많이 쓴다.
+
+batch 내 최대 길이에 맞춤
+단, 길이를 8, 16, 32의 배수로 맞춤
+비슷한 길이끼리 묶는 bucketing/smart batching 사용
+
+**한 줄 요약**
+Dynamic padding = 전체 데이터셋의 최대 길이가 아니라, 각 배치에서 가장 긴 샘플에 맞춰 padding하는 방식.
+주로 NLP/음성 모델 학습에서 불필요한 padding을 줄여 메모리와 연산량을 절약하기 위해 사용한다.
+
+
 ## epoch
 🧠 Epoch(에폭)이란?
 Epoch이란, 전체 학습 데이터셋을 인공지능 모델이 한 번 모두 보고 학습하는 과정을 말함.
@@ -12052,6 +12177,54 @@ BERTopic	최근에는 BERT 기반 문장 임베딩을 활용하는 방법도 인
 입력	수많은 문서나 텍스트
 출력	각 문서에 포함된 주제와 단어들의 확률 분포
 활용 분야	뉴스 자동 분류, 여론 분석, 챗봇 문맥 파악, 검색 최적화 등
+
+
+## Trainer API
+Trainer는 Hugging Face Transformers에서 제공하는 학습 도우미 클래스입니다.
+
+원래 PyTorch로 모델을 학습하려면 직접 이런 걸 다 짜야 합니다.
+
+```python
+1. DataLoader 만들기
+2. batch를 GPU로 보내기
+3. 모델 forward
+4. loss 계산
+5. backward
+6. optimizer.step()
+7. learning rate scheduler 적용
+8. validation 평가
+9. checkpoint 저장
+10. 로그 기록
+```
+
+그런데 Trainer를 쓰면 이 많은 과정을 상당 부분 자동으로 처리해줍니다.
+
+예를 들어 나중에는 이런 식으로 학습합니다.
+
+```python
+trainer.train()
+```
+
+이 한 줄로 학습 루프가 돌아갑니다.
+
+**GPU가 필요한 이유**
+Trainer.train()은 CPU에서 매우 느릴 수 있다.
+
+BERT 같은 모델은 파라미터가 많습니다.
+
+bert-base-uncased는 약 1억 개 이상의 파라미터를 가진 모델입니다.
+
+CPU로 학습하면 너무 느립니다.
+
+그래서 보통 GPU를 씁니다.
+
+만약 내 컴퓨터에 GPU가 없다면:
+
+Google Colab
+Kaggle Notebook
+AWS SageMaker Studio Lab
+같은 곳에서 무료 또는 저렴하게 GPU를 사용할 수 있습니다.
+
 
 ## training (학습)
 학습은 모델이 **정답(target)**을 알고 있는 상태에서 예측이 얼마나 틀렸는지를 계산하고 가중치(weight)를 업데이트하는 과정.
