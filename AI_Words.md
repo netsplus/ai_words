@@ -6609,6 +6609,633 @@ Stable	이후 일정한 학습률 유지
 Decay	마지막 10% 학습 단계에서 선형으로 0까지 감소
 → 훈련 초반 불안정 방지 + 후반 안정 수렴 유도
 
+
+## Learning Curve (학습 곡선)
+모델을 학습시키는 방법을 아는 것만으로는 부족해.
+
+학습이 잘 되고 있는지 확인하려면 그래프를 봐야 해.
+그 그래프가 Learning Curve야.
+
+Learning Curve는 보통 이런 걸 보여줘:
+
+loss가 줄어드는지
+accuracy가 올라가는지
+training 성능과 validation 성능이 비슷하게 움직이는지
+어느 순간부터 모델이 훈련 데이터만 외우고 있는지
+학습이 너무 느리거나 불안정한지
+예를 들어 loss가 계속 줄고 accuracy가 올라가면 모델이 잘 배우는 중이야.
+
+그런데 training accuracy는 계속 올라가는데 validation accuracy가 떨어지면, 모델이 훈련 데이터만 외우는 상황일 수 있어. 이걸 overfitting이라고 해.
+
+반대로 training accuracy도 낮고 validation accuracy도 낮으면, 모델이 아직 제대로 배우지 못한 거야. 이건 underfitting에 가까워.
+
+그래서 learning curve를 보면:
+
+학습을 더 해야 하는지
+중간에 멈춰야 하는지
+learning rate를 바꿔야 하는지
+데이터나 모델에 문제가 있는지
+이런 걸 판단할 수 있어.
+
+한마디로 모델 학습 상태를 진단하는 그래프 보는 법을 배우자는 얘기야.
+
+모델을 학습할 때 한 번에 전체 데이터를 다 보는 게 아니라, 데이터를 작은 묶음(batch) 단위로 나눠서 학습해.
+
+예를 들어 데이터가 10,000개 있으면 한 번에 10,000개를 다 처리하는 게 아니라:
+
+```python
+batch 1: 32개
+batch 2: 32개
+batch 3: 32개
+...
+```
+
+이런 식으로 나눠서 처리해.
+
+여기서 말하는 metrics는 모델 성능을 나타내는 값들이야.
+
+예를 들면:
+
+- loss
+- accuracy
+- precision
+- recall
+- F1 score
+
+같은 것들.
+
+Transformers에서는 학습 중에 이런 성능 값들을 batch마다 계산해.
+
+예를 들어:
+```python
+batch 1 loss = 0.92
+batch 2 loss = 0.81
+batch 3 loss = 0.77
+batch 4 loss = 0.69
+```
+
+이런 식으로.
+
+그리고 이 값들을 그냥 화면에만 보여주는 게 아니라, 디스크에 저장해.
+
+즉, 학습 기록을 파일로 남긴다는 뜻이야.
+
+그렇게 저장된 기록을 나중에 시각화 도구로 볼 수 있어.
+
+대표적으로 Weights & Biases, 줄여서 W&B라는 도구가 있어.
+
+이 도구를 쓰면 학습 과정이 그래프로 보임.
+
+예를 들면:
+```python
+loss가 시간이 지나면서 내려가는지
+accuracy가 시간이 지나면서 올라가는지
+validation loss가 어느 시점부터 올라가는지
+```
+
+이런 걸 한눈에 확인할 수 있어.
+
+쉽게 말하면:
+
+모델이 학습하는 동안 매 batch마다 성능 점수를 기록해두고, 그 기록을 W&B 같은 도구로 그래프로 그려서 모델이 잘 배우고 있는지 추적한다는 말이야.
+
+비유하면 운동 기록 앱이랑 비슷해.
+
+운동할 때 매일:
+```python
+몸무게
+운동 시간
+칼로리
+심박수
+```
+
+이런 걸 기록해두면 나중에 그래프로 변화를 볼 수 있잖아.
+
+모델 학습도 마찬가지로:
+```python
+loss
+accuracy
+learning rate
+validation score
+```
+
+이런 걸 계속 기록해두고 그래프로 보는 거야.
+
+**Loss Curve**
+loss curve는 아래와 같은 과정을 거쳐. 
+
+High initial loss: 학습을 처음 시작하면 loss가 높게 나오는 게 자연스러워. 왜냐하면 모델이 아직 데이터에 맞게 조정되지 않았기 때문이야. 처음에는 모델이 거의 감으로 예측하는 상태에 가까워.
+
+Decreasing loss: 학습이 진행되면 모델이 점점 데이터를 보고 패턴을 배워. 그러면 예측이 조금씩 좋아지고, loss는 점점 내려가야 해.
+
+```python
+epoch 1 loss = 1.8
+epoch 2 loss = 1.2
+epoch 3 loss = 0.8
+epoch 4 loss = 0.5
+```
+
+이런 식이면 정상적인 학습 흐름이야.
+
+loss가 내려간다는 건 모델이 정답에 더 가까운 예측을 하고 있다는 뜻이야.
+
+Convergence: 학습을 계속하다 보면 loss가 계속 무한히 내려가지는 않아. 어느 순간부터는 loss가 거의 비슷한 값에서 머물러.
+
+예를 들면:
+```python
+epoch 6 loss = 0.31
+epoch 7 loss = 0.29
+epoch 8 loss = 0.28
+epoch 9 loss = 0.28
+epoch 10 loss = 0.27
+```
+
+이런 상태를 convergence, 즉 수렴이라고 해. 모델이 데이터 안의 주요 패턴을 어느 정도 배웠고, 더 학습해도 큰 개선이 없다는 뜻이야.
+
+정리하면 정상적인 loss 흐름은 보통 이렇게 돼:
+```python
+처음에는 높음 → 학습하면서 내려감 → 어느 정도 낮은 값에서 안정됨
+```
+
+그래프로 보면 이런 느낌이야:
+```python
+loss
+높음 |\
+     | \
+     |  \
+     |   \__
+낮음 |      \____
+     +----------------
+        training time
+```
+
+즉, 처음엔 많이 틀리지만 학습하면서 점점 덜 틀리고, 나중에는 안정되는 게 이상적인 모습이야.
+
+**Accuracy Curves**
+Accuracy curve는 모델이 시간이 지나면서 얼마나 많이 맞히는지 보여주는 그래프야.
+
+Loss curve는 “얼마나 틀렸는지 / 얼마나 오차가 큰지”를 보는 거고,
+Accuracy curve는 “전체 중 몇 개를 맞혔는지”를 보는 거야.
+
+예를 들어 데이터 100개 중 70개를 맞히면 accuracy는 70%야.
+
+Accuracy curve는 보통 올라가는 게 정상
+모델이 학습을 잘하고 있다면 accuracy는 시간이 지날수록 점점 올라가야 해.
+
+예를 들면:
+```python
+epoch 1 accuracy = 42%
+epoch 2 accuracy = 58%
+epoch 3 accuracy = 71%
+epoch 4 accuracy = 80%
+```
+
+이런 식이면 모델이 점점 더 많이 맞히고 있다는 뜻이야.
+
+처음에는 낮게 시작하는 게 자연스러움
+학습 초반에는 모델이 아직 데이터 패턴을 모르니까 정확도가 낮을 수 있어.
+
+예를 들어 고양이/강아지 분류 모델을 처음 학습시키면, 처음에는 이미지 특징을 잘 몰라서 많이 틀려.
+
+```python
+처음 accuracy = 50%
+```
+
+이럴 수 있어.
+
+특히 이진 분류라면 랜덤으로 찍어도 50% 근처가 나올 수 있지.
+
+학습하면서 올라가야 함
+모델이 데이터를 보면서 패턴을 배우면 정확도가 올라가.
+
+예를 들어:
+```python
+고양이 이미지에는 귀 모양, 눈 모양, 털 패턴이 있다
+강아지 이미지에는 주둥이, 체형, 귀 모양이 다르다
+```
+
+이런 패턴을 학습하면 맞히는 개수가 많아지고 accuracy가 증가해.
+
+계단처럼 오를 수 있음
+Accuracy는 loss처럼 부드럽게 변하지 않을 때가 많아.
+
+왜냐하면 accuracy는 맞았냐/틀렸냐를 기준으로 계산하기 때문이야.
+
+예를 들어 어떤 샘플에 대해 모델이 이렇게 예측했다고 해보자.
+
+정답은 A인데:
+```python
+처음: A일 확률 40%, B일 확률 60% → 틀림
+나중: A일 확률 49%, B일 확률 51% → 여전히 틀림
+조금 더 학습 후: A일 확률 51%, B일 확률 49% → 맞음
+```
+
+모델은 사실 점점 정답에 가까워지고 있었지만, accuracy는 마지막 순간까지 변하지 않다가 갑자기 올라가.
+
+그래서 accuracy curve는 부드러운 곡선이라기보다 이런 느낌일 수 있어:
+```python
+accuracy
+높음 |           ______
+     |      ____|
+     |  ___|
+     |__|
+낮음 +----------------
+        training time
+```
+
+즉, 조금씩 매끄럽게 오르기보다는 계단식으로 점프하면서 올라갈 수 있다는 말이야.
+
+“loss curve보다 더 많은 step을 포함할 수 있다”는 건?
+학습 로그에서 loss와 accuracy를 기록하는 빈도가 다를 수 있다는 뜻이야.
+
+예를 들어 loss는 100 step마다 기록하고, accuracy는 평가할 때마다 더 자세히 기록할 수도 있어.
+
+또는 accuracy는 각 평가 단계에서 여러 batch 기준으로 계산되어 더 많은 포인트가 생길 수도 있어.
+
+중요한 건 둘 다 학습 상태를 보는 지표지만, 그래프의 모양과 기록 방식이 항상 똑같지는 않다는 거야.
+
+정리하면:
+```python
+Accuracy curve = 모델이 얼마나 많이 맞히는지 보여주는 그래프
+
+정상적인 흐름:
+처음에는 낮음 → 학습하면서 올라감 → 어느 순간 완만해짐 또는 계단식으로 증가
+```
+
+accuracy가 계속 올라가면 모델이 잘 배우고 있는 거고,
+올라가지 않고 멈춰 있으면 학습이 잘 안 되고 있을 가능성이 있어.
+
+**Convergence**
+Convergence는 모델 학습이 어느 정도 끝나서, 성능이 더 이상 크게 변하지 않는 상태를 말해.
+
+쉽게 말하면 모델이 이제 배울 만큼 배워서 안정된 상태에 도달했다는 뜻이야.
+
+학습 초반에는 loss와 accuracy가 많이 변해.
+
+예를 들면:
+```python
+epoch 1: loss 1.8, accuracy 45%
+epoch 2: loss 1.1, accuracy 62%
+epoch 3: loss 0.7, accuracy 75%
+epoch 4: loss 0.45, accuracy 84%
+```
+
+이때는 모델이 빠르게 배우는 중이야.
+
+그런데 어느 순간부터는 변화가 작아져.
+```python
+epoch 5: loss 0.34, accuracy 88%
+epoch 6: loss 0.31, accuracy 89%
+epoch 7: loss 0.30, accuracy 89.2%
+epoch 8: loss 0.30, accuracy 89.1%
+epoch 9: loss 0.29, accuracy 89.3%
+```
+
+이렇게 loss는 더 이상 크게 내려가지 않고, accuracy도 거의 비슷한 수준에서 머무는 상태가 돼.
+
+이걸 수렴했다, 즉 convergence가 일어났다고 해.
+
+그래프로 보면 이런 느낌이야.
+```python
+loss
+높음 |\
+     | \
+     |  \
+     |   \______
+낮음 +----------------
+        training time
+
+accuracy
+높음 |        ________
+     |      /
+     |    /
+     |  /
+낮음 +----------------
+        training time
+```
+
+loss는 내려가다가 평평해지고,
+accuracy는 올라가다가 평평해지는 모습이야.
+
+학습(each epoch)할 때마다 모델이 비슷한 수준의 성능에 도달해야 해.
+```python
+1번째 학습: accuracy 89%
+2번째 학습: accuracy 88.7%
+3번째 학습: accuracy 89.2%
+```
+이런 식이면 안정적이야.
+
+그런데 매번 결과가 크게 다르면 문제가 있을 수 있어.
+
+```python
+1번째 학습: accuracy 89%
+2번째 학습: accuracy 72%
+3번째 학습: accuracy 94%
+```
+
+이러면 학습이 불안정하거나 데이터, 초기값, learning rate, batch size 등에 문제가 있을 수 있어.
+
+수렴(Convergence)된 모델은 이제 새 데이터에 대해 예측하는 데 사용할 수 있어.
+
+예를 들어 감정 분석 모델이라면 새로운 문장을 넣었을 때:
+```python
+"배송이 빠르고 품질도 좋아요"
+→ 긍정
+```
+
+이런 식으로 예측할 수 있어.
+
+하지만 수렴했다고 해서 무조건 좋은 모델이라는 뜻은 아니야.
+
+성능이 안정됐다는 뜻이지, 성능이 충분히 좋은지는 따로 봐야 해.
+
+그래서 evaluation metrics를 확인해야 해.
+
+예를 들면:
+
+- accuracy
+- precision
+- recall
+- F1 score
+- validation loss
+- test accuracy
+
+같은 지표를 보고 실제로 모델이 얼마나 잘하는지 판단해.
+
+정리하면:
+
+Convergence = 학습이 진행되면서 loss와 accuracy가 더 이상 크게 변하지 않고 안정되는 상태
+
+이 상태가 되면 모델이 어느 정도 패턴을 배웠다고 볼 수 있고, 이후에는 새 데이터 예측에 사용할 수 있어.
+다만 진짜 성능이 좋은지는 평가 지표를 따로 확인해야 해.
+
+**건강한 learning curve의 특징**
+정상적으로 잘 학습되는 그래프는 보통 이런 특징이 있어.
+
+1) Loss가 부드럽게 내려감
+Copyloss가 갑자기 폭발하거나 심하게 흔들리지 않고 점점 감소
+좋은 신호야.
+
+2) Accuracy가 점점 올라감
+Copy처음에는 낮지만 학습하면서 점점 증가
+중간에 계단처럼 멈춰 보이는 구간이 있어도 괜찮아.
+
+3) Training과 validation 성능 차이가 작음
+Copytraining accuracy와 validation accuracy가 비슷함
+training loss와 validation loss가 비슷한 흐름으로 내려감
+이러면 모델이 훈련 데이터만 외운 게 아니라 일반화도 어느 정도 하고 있다는 뜻이야.
+
+**Overfitting**
+**Overfitting**은 모델이 훈련 데이터에 너무 맞춰져서, 새로운 데이터에는 잘 못 맞히는 상태야.
+
+쉽게 말하면 **공부를 한 게 아니라 문제집 답을 외운 상태**에 가까워.
+
+---
+
+예를 들어 시험 공부를 한다고 해보자.
+
+학생이 연습문제는 거의 다 맞혀.
+
+```text
+연습문제 점수: 98점
+```
+
+그런데 새로운 문제로 시험을 보면 점수가 낮아.
+
+```text
+실전 시험 점수: 65점
+```
+
+이러면 개념을 제대로 이해한 게 아니라, 연습문제 패턴이나 답을 외운 거에 가까워.
+
+모델도 똑같아.
+
+```text
+training data에서는 잘함
+validation data에서는 못함
+```
+
+이게 overfitting이야.
+
+---
+
+## Overfitting이 생기면 그래프가 어떻게 보이냐
+
+### 1. Training loss는 계속 내려가는데 validation loss는 올라감
+
+훈련 데이터에 대해서는 점점 더 잘 맞추니까 training loss는 계속 줄어.
+
+```text
+training loss: 0.8 → 0.5 → 0.3 → 0.1
+```
+
+그런데 새로운 데이터인 validation set에서는 성능이 나빠질 수 있어.
+
+```text
+validation loss: 0.7 → 0.6 → 0.8 → 1.1
+```
+
+이건 위험 신호야.
+
+모델이 훈련 데이터에만 너무 특화되고 있다는 뜻이야.
+
+---
+
+### 2. Training accuracy와 validation accuracy 차이가 커짐
+
+예를 들어:
+
+```text
+training accuracy: 98%
+validation accuracy: 72%
+```
+
+이런 상태면 훈련 데이터는 거의 다 맞히는데, 검증 데이터는 많이 틀리는 거야.
+
+즉, 일반화가 잘 안 되는 상태야.
+
+---
+
+### 3. Training accuracy가 validation accuracy보다 훨씬 높음
+
+정상적인 경우라면 둘 사이 차이가 너무 크지 않아야 해.
+
+괜찮은 예:
+
+```text
+training accuracy: 89%
+validation accuracy: 86%
+```
+
+위험한 예:
+
+```text
+training accuracy: 99%
+validation accuracy: 70%
+```
+
+이 경우는 과적합 가능성이 커.
+
+---
+
+## Overfitting을 줄이는 방법
+
+### 1. Regularization
+
+모델이 너무 특정 패턴에 집착하지 못하게 막는 방법이야.
+
+대표적으로:
+
+- dropout
+- weight decay
+- L1/L2 regularization
+
+같은 게 있어.
+
+### Dropout
+
+학습 중에 일부 뉴런을 랜덤하게 꺼버리는 방식이야.
+
+모델이 특정 뉴런이나 특정 경로에 너무 의존하지 않게 만들어.
+
+비유하면, 항상 같은 힌트만 보고 문제를 풀지 못하게 일부 힌트를 가리는 느낌이야.
+
+---
+
+### Weight decay
+
+모델의 가중치가 너무 커지지 않게 제한하는 방식이야.
+
+가중치가 너무 커지면 모델이 특정 특징에 과하게 반응할 수 있는데, weight decay는 이걸 완화해.
+
+---
+
+## 2. Early stopping
+
+검증 성능이 더 이상 좋아지지 않으면 학습을 멈추는 방법이야.
+
+왜냐하면 어느 순간 이후로는 모델이 더 배우는 게 아니라 훈련 데이터를 외우기 시작할 수 있기 때문이야.
+
+예를 들어 validation loss가 이렇게 변한다고 해보자.
+
+```text
+epoch 1: 0.80
+epoch 2: 0.62
+epoch 3: 0.55
+epoch 4: 0.53
+epoch 5: 0.54
+epoch 6: 0.57
+epoch 7: 0.61
+```
+
+epoch 4까지는 좋아졌어.  
+그런데 epoch 5부터 validation loss가 다시 올라가.
+
+이때 계속 학습하면 overfitting이 심해질 수 있어.  
+그래서 적당한 시점에 멈추는 게 좋아.
+
+---
+
+## early_stopping_patience = 3 이 무슨 뜻이냐
+
+`early_stopping_patience`를 3으로 설정한다는 건:
+
+```text
+validation loss가 3 epoch 연속으로 좋아지지 않으면 학습을 멈춘다
+```
+
+는 뜻이야.
+
+예를 들어:
+
+```text
+epoch 1 validation loss = 0.80
+epoch 2 validation loss = 0.65
+epoch 3 validation loss = 0.58
+epoch 4 validation loss = 0.55  ← 현재 최고
+epoch 5 validation loss = 0.56  ← 개선 안 됨 1번째
+epoch 6 validation loss = 0.57  ← 개선 안 됨 2번째
+epoch 7 validation loss = 0.59  ← 개선 안 됨 3번째
+```
+
+그러면 epoch 7에서 학습을 멈춰.
+
+왜냐하면 validation loss가 3번 연속 좋아지지 않았기 때문이야.
+
+---
+
+## 3. Data augmentation
+
+훈련 데이터를 더 다양하게 만드는 방법이야.
+
+이미지라면:
+
+- 살짝 회전
+- 좌우 반전
+- 밝기 조절
+- 확대/축소
+
+텍스트라면:
+
+- 표현 바꾸기
+- 일부 단어 치환
+- 문장 순서 변형
+- paraphrasing
+
+같은 방법이 있어.
+
+데이터가 다양해지면 모델이 특정 데이터만 외우기 어려워지고, 새로운 데이터에도 더 잘 대응할 수 있어.
+
+---
+
+## 4. Reduce model complexity
+
+모델이 너무 크거나 복잡하면 훈련 데이터를 쉽게 외울 수 있어.
+
+그래서 더 작은 모델을 쓰거나, 파라미터 수를 줄이면 overfitting을 줄일 수 있어.
+
+예를 들어 데이터가 적은데 너무 큰 모델을 쓰면 이런 문제가 생길 수 있어.
+
+```text
+데이터: 1,000개
+모델: 매우 큰 Transformer
+```
+
+이 경우 모델이 데이터 패턴을 일반적으로 배우기보다, 훈련 데이터를 외워버릴 가능성이 커.
+
+---
+
+## 핵심 정리
+
+Overfitting은 이런 상태야.
+
+```text
+훈련 데이터에서는 성능이 좋음
+검증 데이터에서는 성능이 나쁨
+```
+
+그래프에서는 보통 이렇게 보여.
+
+```text
+training loss ↓
+validation loss ↑ 또는 정체
+
+training accuracy ↑
+validation accuracy는 낮거나 정체
+```
+
+해결 방법은:
+
+```text
+regularization 사용
+early stopping 사용
+데이터 다양화
+모델 크기 줄이기
+```
+
+그리고 `early_stopping_patience = 3`은 **검증 성능이 3 epoch 연속 좋아지지 않으면 학습을 멈추겠다**는 설정이야.
+
+
 ## learning rate warmup
 1️⃣ Learning Rate(학습률, Learning Rate)부터 정확히 보자
 
